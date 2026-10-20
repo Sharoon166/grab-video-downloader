@@ -1,644 +1,749 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>grab — downloader</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬇</text></svg>" />
-<style>
-  :root{
-    --ink:#0a0b09;
-    --panel:#111310;
-    --panel-2:#171a15;
-    --line:#262a20;
-    --line-hot:#3a4030;
-    --text:#e9ebe0;
-    --muted:#8a9080;
-    --acid:#c9f24d;
-    --acid-dim:#8fae3a;
-    --hot:#ff6b4a;
-    --blue:#7ec7ff;
-    --mono:'IBM Plex Mono',ui-monospace,monospace;
-    --serif:'Instrument Serif',Georgia,serif;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    background:var(--ink);
-    color:var(--text);
-    font-family:var(--mono);
-    font-size:14px;
-    line-height:1.5;
-    -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
-  }
-  /* atmosphere -------------------------------------------------------- */
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:
-      radial-gradient(900px 480px at 78% -10%, rgba(201,242,77,.10), transparent 65%),
-      radial-gradient(700px 500px at 0% 100%, rgba(126,199,255,.07), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,.028) 0 1px, transparent 1px 44px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,.028) 0 1px, transparent 1px 44px);
-  }
-  body::after{
-    content:"";position:fixed;inset:-50%;pointer-events:none;z-index:1;opacity:.35;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
-    mix-blend-mode:overlay;
-  }
-  .wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:0 24px 80px}
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>grab — downloader</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Martian+Mono:wdth,wght@75..112,400..600&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23e4492b'/><path d='M50 22v44m0 0-18-18m18 18 18-18M28 78h44' stroke='white' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+        />
+        <style>
+:root{--bg:#f2efe7;--surface:#fbfaf5;--ink:#17150f;--mute:#7d7767;--line:#e1dac9;--acc:#e4492b;--acc-ink:#fffaf3;--ok:#2f7a4e;--r:14px;--ease:cubic-bezier(0.22, 0.8, 0.24, 1);--display:"Bricolage Grotesque", system-ui, sans-serif;--mono:"Martian Mono", ui-monospace, monospace}@media (prefers-color-scheme:dark){:root{--bg:#11100e;--surface:#1a1915;--ink:#f0ebe0;--mute:#8d8778;--line:#2b2924;--acc:#ff6b45;--acc-ink:#1a0e09;--ok:#7fcf9a}}*{box-sizing:border-box;margin:0;padding:0}[hidden]{display:none!important}body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}::selection{background:var(--acc);color:var(--acc-ink)}:focus-visible{outline:2px solid var(--acc);outline-offset:3px}.wrap{max-width:1040px;margin:0 auto;padding:0 clamp(18px, 4vw, 36px)}header{display:flex;justify-content:space-between;align-items:center;padding:26px 0}.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:20px;letter-spacing:-.03em}.mark{width:28px;height:28px;border-radius:8px;background:var(--acc);display:grid;place-items:center;transition:transform 0.4s var(--ease)}.brand:hover .mark{transform:rotate(-12deg) translateY(2px)}.mark svg{width:16px;height:16px;stroke:var(--acc-ink)}.status{font-family:var(--mono);font-size:11px;color:var(--mute);display:flex;align-items:center;gap:8px}.led{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}.led.bad{background:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}.hero{padding:clamp(40px, 8vh, 88px) 0 28px}h1{font-weight:700;font-size:clamp(44px, 8vw, 96px);line-height:.92;letter-spacing:-.045em;font-variation-settings:"opsz" 96;animation:enter 0.7s var(--ease) both}h1 .acc{color:var(--acc)}h1 .soft{color:var(--mute)}.lede{margin-top:20px;max-width:50ch;color:var(--mute);font-size:15px;animation:enter 0.7s 0.08s var(--ease) both}.lede strong{color:var(--ink);font-weight:600}.bar{margin-top:38px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--ink);border-radius:999px;padding:6px 6px 6px 22px;transition:box-shadow 0.25s var(--ease);animation:enter 0.7s 0.14s var(--ease) both}.bar:focus-within{box-shadow:0 0 0 5px color-mix(in srgb,var(--acc) 22%,transparent)}.bar input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;font-size:17px;color:var(--ink);padding:14px 0}.bar input::placeholder{color:var(--mute);opacity:.7}.btn{font:inherit;font-weight:650;border:0;cursor:pointer;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform 0.15s var(--ease),background 0.2s,color 0.2s,box-shadow 0.3s var(--ease),opacity 0.2s}.btn:active:not(:disabled){transform:scale(.97)}.btn:disabled{opacity:.6;cursor:progress}.btn.loading{color:transparent!important}.btn.loading::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;border:2px solid var(--bg);border-right-color:#fff0;animation:spin 0.7s linear infinite}.btn-ink{background:var(--ink);color:var(--bg);border-radius:999px;padding:14px 26px;font-size:15px;white-space:nowrap}.btn-ink:hover:not(:disabled){background:var(--acc);color:var(--acc-ink)}.btn-ink.loading::after{border-color:var(--acc-ink);border-right-color:#fff0}.hint{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--mono);font-size:11px;color:var(--mute);animation:enter 0.7s 0.2s var(--ease) both}kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--ink);background:var(--surface)}.card{margin-top:28px;display:grid;grid-template-columns:300px 1fr;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}.card.show{animation:enter 0.5s var(--ease) both}.thumb{position:relative;aspect-ratio:16/9;background:var(--line);overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s,transform 0.7s var(--ease)}.thumb img.ready{opacity:1}.thumb:hover img{transform:scale(1.04)}.no-img{background:repeating-linear-gradient(-45deg,var(--line) 0 8px,transparent 8px 16px)!important}.badge{position:absolute;right:10px;bottom:10px;font-family:var(--mono);font-size:11px;background:var(--ink);color:var(--bg);padding:3px 8px;border-radius:6px}.pbody{padding:26px 28px;display:flex;flex-direction:column;gap:20px;min-width:0}.ptitle{font-size:clamp(20px, 2.4vw, 27px);font-weight:650;letter-spacing:-.02em;line-height:1.15}.pmeta{margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--mute);display:flex;flex-wrap:wrap;gap:4px 0}.pmeta span+span::before{content:"/";margin:0 10px;opacity:.5}.controls{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-end}.field{display:flex;flex-direction:column;gap:8px}.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}.seg{position:relative;display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:13.5px;font-weight:550;color:var(--mute);padding:7px 15px;border-radius:999px;cursor:pointer;transition:color 0.3s}.seg button:hover:not(.on){color:var(--ink)}.seg button.on{color:var(--bg)}.seg .knob{position:absolute;top:3px;bottom:3px;left:0;width:0;border-radius:999px;background:var(--ink);transition:transform 0.45s var(--ease),width 0.45s var(--ease)}select{font:inherit;font-size:14px;color:var(--ink);background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237d7767' fill='none' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:8px 34px 8px 12px;appearance:none;cursor:pointer;transition:border-color 0.2s}select:hover{border-color:var(--mute)}.checks{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;font-size:13.5px;color:var(--mute)}.checks label{display:flex;gap:8px;align-items:center;cursor:pointer;user-select:none;transition:color 0.2s}.checks label:hover{color:var(--ink)}input[type="checkbox"]{appearance:none;width:17px;height:17px;border:1.5px solid var(--mute);border-radius:5px;cursor:pointer;display:grid;place-items:center;transition:background 0.2s,border-color 0.2s}input[type="checkbox"]:checked{background:var(--ink);border-color:var(--ink)}input[type="checkbox"]:checked::after{content:"";width:8px;height:4px;border:2px solid var(--bg);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}.dest{margin-left:auto;font-family:var(--mono);font-size:11px}.go{background:var(--acc);color:var(--acc-ink);border-radius:12px;padding:16px;font-size:16px;font-weight:700;letter-spacing:-.01em}.go:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 26px -12px var(--acc)}.go.loading::after{border-color:var(--acc-ink);border-right-color:#fff0}.hero{text-align:center}.lede{margin-left:auto;margin-right:auto}.bar{max-width:640px;margin-left:auto;margin-right:auto}.hint{justify-content:center}.plat{justify-content:center}.plat-row{justify-content:center}.plat{margin-top:26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;animation:enter 0.7s 0.26s var(--ease) both}.plat-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}.plat-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap}.logo{width:22px;height:22px;background:var(--c);-webkit-mask:var(--src) center/contain no-repeat;mask:var(--src) center/contain no-repeat;opacity:.9;transition:transform 0.35s var(--ease),opacity 0.2s;cursor:default}.logo:hover{transform:translateY(-3px) scale(1.15);opacity:1}.plat-row .more{font-family:var(--mono);font-size:11px;color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:4px 11px;white-space:nowrap}.qhead{margin:64px 0 14px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}.qhead h2{font-size:24px;font-weight:700;letter-spacing:-.03em}.count{font-family:var(--mono);font-size:11px;color:var(--mute)}.job{display:grid;grid-template-columns:150px 1fr;gap:18px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;transition:border-color 0.2s,transform 0.3s var(--ease)}.job:hover{border-color:var(--mute);transform:translateY(-1px)}.job.enter{animation:enter 0.5s var(--ease) both}.job-thumb{aspect-ratio:16/9;border-radius:9px;overflow:hidden;background:var(--line)}.job-thumb img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s}.job-thumb img.ready{opacity:1}.jrow{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.jtext{min-width:0;flex:1}.job-title{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.job-url{font-family:var(--mono);font-size:10.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}.stats{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--mute)}.stats b{color:var(--ink);font-weight:500}.warn{color:var(--acc)}.pill{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--mute);white-space:nowrap}.pill.downloading,.pill.processing,.pill.fetching,.pill.queued,.pill.cancelling{color:var(--ink);border-color:var(--ink)}.pill.finished{background:var(--ok);border-color:var(--ok);color:var(--bg)}.pill.error{color:var(--acc);border-color:var(--acc)}.track{position:relative;height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:12px}.fill{position:absolute;left:0;top:0;height:100%;width:0;background:var(--ink);border-radius:99px;transition:width 0.6s var(--ease)}.fill.error{background:var(--acc)}.fill.done{background:var(--ok)}.fill.cancelled{background:var(--mute)}.fill.ind{width:35%;animation:slide 1.3s var(--ease) infinite}@keyframes slide{from{left:-35%}to{left:100%}}.acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.ghost{font:inherit;font-size:12px;font-weight:550;text-decoration:none;color:var(--ink);background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;transition:background 0.2s,border-color 0.2s,color 0.2s,transform 0.15s}.ghost:active:not(:disabled){transform:scale(.96)}.ghost:hover:not(:disabled){border-color:var(--ink);background:var(--ink);color:var(--bg)}.ghost.danger:hover:not(:disabled){border-color:var(--acc);background:var(--acc);color:var(--acc-ink)}.ghost:disabled{opacity:.4;cursor:not-allowed}.err{margin-top:10px;font-size:13px;color:var(--acc)}.empty{border:1.5px dashed var(--line);border-radius:18px;padding:48px 24px;text-align:center;color:var(--mute)}.empty b{display:block;font-size:20px;font-weight:650;color:var(--ink);margin-bottom:6px}.empty code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 6px}.cli{margin-top:72px;display:grid;grid-template-columns:1fr 1.1fr;gap:28px;align-items:center;padding:30px;border:1px solid var(--line);border-radius:18px}.cli h3{font-size:22px;font-weight:700;letter-spacing:-.02em}.cli p{color:var(--mute);margin-top:6px;font-size:14px;max-width:44ch}.term{position:relative;background:var(--ink);color:var(--bg);border-radius:12px;padding:18px;font-family:var(--mono);font-size:12.5px;line-height:1.9;overflow-x:auto}.term .p{color:var(--acc)}.term .c{opacity:.55}.copy{position:absolute;top:10px;right:10px;font:inherit;font-size:10px;letter-spacing:.04em;text-transform:uppercase;background:none;border:1px solid rgb(128 128 128 / .4);color:inherit;border-radius:999px;padding:4px 10px;cursor:pointer;transition:border-color 0.2s,color 0.2s}.copy:hover{border-color:var(--acc);color:var(--acc)}footer{margin-top:40px;padding:22px 0 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:var(--mono);font-size:11px;color:var(--mute)}#toasts{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;flex-direction:column;gap:10px;max-width:min(380px, calc(100vw - 40px))}.toast{display:flex;gap:12px;align-items:flex-start;background:var(--ink);color:var(--bg);padding:13px 16px;border-radius:12px;font-size:14px;box-shadow:0 18px 40px -16px rgb(0 0 0 / .45);cursor:pointer;animation:enter 0.4s var(--ease) both}.toast.out{animation:exit 0.3s var(--ease) forwards}.toast i{width:8px;height:8px;border-radius:50%;background:var(--acc);margin-top:7px;flex:none}.toast.ok i{background:var(--ok)}.toast b{display:block;font-weight:650}.toast small{opacity:.7;font-family:var(--mono);font-size:11px;word-break:break-all}@keyframes enter{from{opacity:0;transform:translateY(12px)}}@keyframes exit{to{opacity:0;transform:translateY(8px)}}@keyframes spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}@media (max-width:760px){.card{grid-template-columns:1fr}.pbody{padding:20px}.go{width:100%}.bar{flex-wrap:wrap;border-radius:20px;padding:6px}.bar input{flex-basis:100%;padding:12px 14px}.bar .btn-ink{flex:1}.job{grid-template-columns:96px 1fr;gap:12px}.cli{grid-template-columns:1fr}.dest{margin-left:0;width:100%}.status span:last-child{display:none}}
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <header>
+                <div class="brand">
+                    <div class="mark">
+                        <svg
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M8 2v9M4 7.5l4 4 4-4M3 14h10" />
+                        </svg>
+                    </div>
+                    grab
+                </div>
+                <div class="status">
+                    <span class="led" id="led"></span
+                    ><span id="htext">connecting</span>
+                </div>
+            </header>
 
-  /* header ------------------------------------------------------------ */
-  header{
-    position:relative;z-index:3;max-width:1080px;margin:0 auto;padding:22px 24px;
-    display:flex;align-items:center;justify-content:space-between;gap:16px;
-    border-bottom:1px solid var(--line);
-  }
-  .brand{display:flex;align-items:baseline;gap:10px}
-  .brand b{font-family:var(--serif);font-size:30px;font-weight:400;letter-spacing:-.5px}
-  .brand b i{color:var(--acid);font-style:italic}
-  .brand span{font-size:11px;color:var(--muted);letter-spacing:.22em;text-transform:uppercase}
-  .head-meta{display:flex;gap:18px;align-items:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acid);box-shadow:0 0 0 0 rgba(201,242,77,.6);animation:pulse 2.4s infinite}
-  .dot.bad{background:var(--hot);animation:none}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,242,77,.55)}70%{box-shadow:0 0 0 8px rgba(201,242,77,0)}100%{box-shadow:0 0 0 0 rgba(201,242,77,0)}}
+            <main>
+                <section class="hero">
+                    <h1>
+                        Paste a link.<br /><span class="acc">Keep</span> the
+                        <span class="soft">file.</span>
+                    </h1>
+                    <p class="lede">
+                        Any link yt-dlp can read becomes one clean file in your
+                        <strong>Downloads</strong> folder, merged and ready
+                        before you reach for the mouse.
+                    </p>
 
-  /* hero -------------------------------------------------------------- */
-  .hero{padding:64px 0 40px}
-  .kicker{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--acid-dim);margin-bottom:18px}
-  h1{
-    font-family:var(--serif);font-weight:400;line-height:.95;letter-spacing:-.02em;
-    font-size:clamp(46px,8.4vw,104px);
-  }
-  h1 em{font-style:italic;color:var(--acid)}
-  h1 .thin{color:var(--muted)}
-  .lede{margin-top:18px;max-width:56ch;color:var(--muted);font-size:13.5px}
-  .lede b{color:var(--text);font-weight:500}
+                    <div class="bar">
+                        <input
+                            id="url"
+                            type="url"
+                            spellcheck="false"
+                            autocomplete="off"
+                            placeholder="https://youtube.com/watch?v=…"
+                            aria-label="Video URL"
+                        />
+                        <button id="inspect" class="btn btn-ink" type="button">
+                            Inspect
+                        </button>
+                    </div>
+                    <div class="hint">
+                        <span><kbd>Enter</kbd> inspect</span>
+                        <span
+                            ><kbd>Ctrl</kbd>+<kbd>Enter</kbd> download now</span
+                        >
+                    </div>
 
-  /* url bar ----------------------------------------------------------- */
-  .bar{margin-top:36px;display:flex;border:1px solid var(--line-hot);background:var(--panel);position:relative}
-  .bar::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:0;background:var(--acid);transition:width .5s cubic-bezier(.2,.8,.2,1)}
-  .bar:focus-within::after{width:100%}
-  .bar .prefix{display:flex;align-items:center;padding:0 14px;color:var(--acid-dim);border-right:1px solid var(--line);user-select:none;font-size:13px}
-  .bar input{
-    flex:1;min-width:0;background:none;border:0;outline:none;color:var(--text);
-    font-family:var(--mono);font-size:15px;padding:20px 16px;letter-spacing:.01em;
-  }
-  .bar input::placeholder{color:#5a5f52}
-  .bar button{
-    border:0;border-left:1px solid var(--line);background:var(--panel-2);color:var(--text);
-    font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
-    padding:0 30px;cursor:pointer;transition:background .18s,color .18s;
-  }
-  .bar button:hover:not(:disabled){background:var(--acid);color:#0a0b09}
-  .bar button:disabled{opacity:.45;cursor:progress}
-  .hint{margin-top:12px;font-size:11.5px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
-  .hint kbd{background:var(--panel-2);border:1px solid var(--line);padding:1px 6px;font-family:var(--mono);font-size:11px;color:var(--acid)}
+                    <div class="plat">
+                        <span class="plat-lbl">Works with</span>
+                        <div
+                            class="plat-row"
+                            role="img"
+                            aria-label="YouTube, TikTok, Instagram, Facebook, X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, Bilibili and many more"
+                        >
+                            <span
+                                class="logo"
+                                title="YouTube"
+                                style="
+                                    --c: #ff0000;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/youtube.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="TikTok"
+                                style="
+                                    --c: var(--ink);
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/tiktok.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Instagram"
+                                style="
+                                    --c: #e4405f;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/instagram.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Facebook"
+                                style="
+                                    --c: #1877f2;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/facebook.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="X"
+                                style="
+                                    --c: var(--ink);
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/x.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Reddit"
+                                style="
+                                    --c: #ff4500;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/reddit.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Vimeo"
+                                style="
+                                    --c: #1ab7ea;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/vimeo.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Twitch"
+                                style="
+                                    --c: #9146ff;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/twitch.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="SoundCloud"
+                                style="
+                                    --c: #ff5500;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/soundcloud.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Dailymotion"
+                                style="
+                                    --c: #0066dc;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/dailymotion.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Pinterest"
+                                style="
+                                    --c: #e60023;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/pinterest.svg);
+                                "
+                            ></span>
+                            <span
+                                class="logo"
+                                title="Bilibili"
+                                style="
+                                    --c: #00a1d6;
+                                    --src: url(https://cdn.jsdelivr.net/npm/simple-icons@11/icons/bilibili.svg);
+                                "
+                            ></span>
+                            <span class="more">and many more</span>
+                        </div>
+                    </div>
 
-  /* reveal ------------------------------------------------------------ */
-  .reveal{opacity:0;transform:translateY(16px);animation:rise .7s cubic-bezier(.2,.8,.2,1) forwards}
-  @keyframes rise{to{opacity:1;transform:none}}
-  .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}.d5{animation-delay:.45s}
+                    <article class="card" id="card" hidden>
+                        <div class="thumb">
+                            <img
+                                id="pv-img"
+                                alt=""
+                                referrerpolicy="no-referrer"
+                            /><span class="badge" id="pv-dur"></span>
+                        </div>
+                        <div class="pbody">
+                            <div>
+                                <h2 class="ptitle" id="pv-title"></h2>
+                                <div class="pmeta" id="pv-meta"></div>
+                            </div>
 
-  /* preview ----------------------------------------------------------- */
-  .preview{
-    margin-top:34px;display:none;grid-template-columns:300px 1fr;gap:0;
-    border:1px solid var(--line);background:var(--panel);
-  }
-  .preview.on{display:grid;animation:rise .5s cubic-bezier(.2,.8,.2,1) forwards;opacity:0}
-  .thumb{position:relative;aspect-ratio:16/9;overflow:hidden;background:#000;border-right:1px solid var(--line)}
-  .thumb img{width:100%;height:100%;object-fit:cover;filter:saturate(.9) contrast(1.05)}
-  .thumb .dur{position:absolute;right:8px;bottom:8px;background:rgba(10,11,9,.9);border:1px solid var(--line-hot);padding:2px 7px;font-size:11px;letter-spacing:.08em}
-  .thumb.empty-thumb,.job-thumb.empty-thumb{
-    background:#0d0f0c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='%233a4030' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3Cpath d='M2 9h20M7 4v5M17 4v5M2 15h20'/%3E%3C/svg%3E") center no-repeat;
-  }
-  .pbody{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
-  .ptitle{font-family:var(--serif);font-size:26px;line-height:1.15;letter-spacing:-.01em}
-  .pmeta{font-size:11.5px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:flex;gap:14px;flex-wrap:wrap}
-  .pmeta span::before{content:"· ";color:var(--acid-dim)}
+                            <div class="controls">
+                                <div class="field">
+                                    <span class="lbl">Capture</span>
+                                    <div class="seg" id="seg">
+                                        <span class="knob"></span>
+                                        <button
+                                            type="button"
+                                            data-v="auto"
+                                            class="on"
+                                        >
+                                            Auto
+                                        </button>
+                                        <button type="button" data-v="video">
+                                            Video
+                                        </button>
+                                        <button type="button" data-v="audio">
+                                            Audio
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="field" id="f-quality">
+                                    <label class="lbl" for="quality"
+                                        >Max height</label
+                                    >
+                                    <select id="quality">
+                                        <option value="">Best available</option>
+                                        <option value="2160">2160p</option>
+                                        <option value="1440">1440p</option>
+                                        <option value="1080" selected>
+                                            1080p
+                                        </option>
+                                        <option value="720">720p</option>
+                                        <option value="480">480p</option>
+                                        <option value="360">360p</option>
+                                    </select>
+                                </div>
+                                <div class="field" id="f-audio" hidden>
+                                    <label class="lbl" for="audiofmt"
+                                        >Format</label
+                                    >
+                                    <select id="audiofmt">
+                                        <option value="m4a">m4a</option>
+                                        <option value="mp3">mp3</option>
+                                        <option value="opus">opus</option>
+                                        <option value="flac">flac</option>
+                                        <option value="wav">wav</option>
+                                    </select>
+                                </div>
+                            </div>
 
-  .controls{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-end}
-  .field{display:flex;flex-direction:column;gap:7px}
-  .field label{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
-  .seg{display:flex;border:1px solid var(--line-hot)}
-  .seg button{
-    background:transparent;border:0;color:var(--muted);font-family:var(--mono);font-size:12px;
-    letter-spacing:.14em;text-transform:uppercase;padding:9px 16px;cursor:pointer;transition:.16s;
-  }
-  .seg button+button{border-left:1px solid var(--line-hot)}
-  .seg button.on{background:var(--acid);color:#0a0b09;font-weight:600}
-  .seg button:not(.on):hover{color:var(--text);background:var(--panel-2)}
-  select{
-    background:var(--panel-2);border:1px solid var(--line-hot);color:var(--text);
-    font-family:var(--mono);font-size:13px;padding:9px 12px;outline:none;cursor:pointer;
-  }
-  .checks{display:flex;gap:18px;font-size:12px;color:var(--muted);align-items:center;flex-wrap:wrap}
-  .checks label{display:flex;gap:7px;align-items:center;cursor:pointer;user-select:none}
-  input[type=checkbox]{accent-color:var(--acid);width:14px;height:14px;cursor:pointer}
+                            <div class="checks">
+                                <label id="c-playlist" hidden
+                                    ><input type="checkbox" id="playlist" />
+                                    Whole playlist</label
+                                >
+                                <label
+                                    ><input type="checkbox" id="subs" /> Include
+                                    subtitles</label
+                                >
+                                <span class="dest">→ ~/Downloads</span>
+                            </div>
 
-  .go{
-    margin-top:2px;align-self:flex-start;background:var(--acid);color:#0a0b09;border:0;
-    font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.2em;text-transform:uppercase;
-    padding:15px 34px;cursor:pointer;transition:.16s;position:relative;overflow:hidden;
-  }
-  .go:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 rgba(201,242,77,.28)}
-  .go:active{transform:none;box-shadow:none}
-  .go:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-  .dest{font-size:11px;color:var(--muted);letter-spacing:.1em}
+                            <button class="btn go" id="download" type="button">
+                                Download
+                            </button>
+                        </div>
+                    </article>
+                </section>
 
-  /* jobs -------------------------------------------------------------- */
-  .section-head{
-    margin:56px 0 16px;display:flex;align-items:baseline;justify-content:space-between;
-    border-bottom:1px solid var(--line);padding-bottom:10px;
-  }
-  .section-head h2{font-family:var(--serif);font-weight:400;font-size:28px}
-  .section-head .count{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+                <section>
+                    <div class="qhead">
+                        <h2>Queue</h2>
+                        <span class="count" id="qcount">0 items</span>
+                    </div>
+                    <div id="jobs"></div>
+                </section>
 
-  .job{border:1px solid var(--line);background:var(--panel);margin-bottom:12px;overflow:hidden;transition:border-color .2s}
-  .job:hover{border-color:var(--line-hot)}
-  .job-top{display:grid;grid-template-columns:132px 1fr auto;gap:16px;padding:14px 16px;align-items:center}
-  .job-thumb{width:132px;aspect-ratio:16/9;background:#000;overflow:hidden;border:1px solid var(--line)}
-  .job-thumb img{width:100%;height:100%;object-fit:cover;opacity:.9}
-  .job-info{min-width:0}
-  .job-title{font-size:14.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .job-url{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
-  .job-stats{display:flex;gap:16px;font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:.06em;flex-wrap:wrap}
-  .job-stats b{color:var(--text);font-weight:500}
-  .pill{
-    font-size:10px;letter-spacing:.18em;text-transform:uppercase;padding:5px 10px;
-    border:1px solid var(--line-hot);color:var(--muted);white-space:nowrap;
-  }
-  .pill.downloading{color:var(--acid);border-color:rgba(201,242,77,.45)}
-  .pill.finished{background:var(--acid);color:#0a0b09;border-color:var(--acid);font-weight:600}
-  .pill.error{color:var(--hot);border-color:rgba(255,107,74,.5)}
-  .pill.cancelled{color:var(--muted)}
-  .pill.fetching,.pill.processing,.pill.queued,.pill.cancelling{color:var(--blue);border-color:rgba(126,199,255,.35)}
-  .track{height:3px;background:#1c1f18;position:relative;overflow:hidden}
-  .fill{height:100%;width:0;background:var(--acid);transition:width .5s ease}
-  .fill.indeterminate{width:32%;animation:slide 1.4s ease-in-out infinite}
-  .fill.error{background:var(--hot)}
-  .fill.cancelled{background:#4a4f42}
-  @keyframes slide{0%{transform:translateX(-110%)}100%{transform:translateX(340%)}}
-  .job-actions{display:flex;gap:8px;padding:0 16px 14px;justify-content:flex-end}
-  .btn-ghost{
-    background:transparent;border:1px solid var(--line-hot);color:var(--text);text-decoration:none;
-    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    padding:8px 16px;cursor:pointer;transition:.16s;display:inline-block;
-  }
-  .btn-ghost:hover:not(:disabled){background:avar(--acid);border-color:var(--acid);color:#0a0b09}
-  .btn-ghost.danger:hover:not(:disabled){background:var(--hot);border-color:var(--hot);color:#0a0b09}
-  .btn-ghost:disabled{opacity:.35;cursor:not-allowed}
-  .job-error{padding:0 16px 14px;font-size:12px;color:var(--hot)}
+                <section class="cli">
+                    <div>
+                        <h3>Same engine, in your terminal.</h3>
+                        <p>
+                            The web UI is a thin layer over the CLI. Anything
+                            you do here can be scripted: pipes, aliases, cron
+                            jobs.
+                        </p>
+                    </div>
+                    <div class="term">
+                        <button class="copy" id="copy" type="button">
+                            copy
+                        </button>
+                        <div>
+                            <span class="p">$</span> uv run grab
+                            <span class="c">-f audio --audio-format mp3</span>
+                            &lt;url&gt;
+                        </div>
+                        <div>
+                            <span class="p">$</span> uv run grab info
+                            <span class="c">&lt;url&gt;</span>
+                        </div>
+                    </div>
+                </section>
+            </main>
 
-  .empty{border:1px dashed var(--line-hot);padding:44px 24px;text-align:center;color:var(--muted);font-size:13px}
-  .empty b{display:block;font-family:var(--serif);font-size:26px;color:var(--text);margin-bottom:8px;font-weight:400}
-
-  /* cli card ---------------------------------------------------------- */
-  .cli{
-    margin-top:56px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel-2),var(--panel));
-    padding:26px 28px;display:flex;gap:26px;align-items:center;justify-content:space-between;flex-wrap:wrap;
-  }
-  .cli h3{font-family:var(--serif);font-weight:400;font-size:24px;margin-bottom:6px}
-  .cli p{color:var(--muted);font-size:12.5px;max-width:52ch}
-  .term{background:#070806;border:1px solid var(--line-hot);padding:14px 16px;min-width:320px;position:relative}
-  .term .line{font-size:13px;white-space:nowrap;overflow-x:auto}
-  .term .line .p{color:var(--acid)}
-  .term .line .c{color:var(--muted)}
-  .term .cursor{display:inline-block;width:8px;height:15px;background:var(--acid);vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
-  @keyframes blink{50%{opacity:0}}
-  .copy{position:absolute;top:8px;right:8px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;background:transparent;border:1px solid var(--line-hot);color:var(--muted);padding:4px 9px;cursor:pointer;transition:.16s;font-family:var(--mono)}
-  .copy:hover{border-color:var(--acid);color:var(--acid)}
-
-  footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;flex-wrap:wrap}
-
-  /* toast ------------------------------------------------------------- */
-  #toasts{position:fixed;right:22px;bottom:22px;z-index:50;display:flex;flex-direction:column;gap:10px;max-width:380px}
-  .toast{background:var(--panel-2);border:1px solid var(--hot);border-left-width:3px;padding:13px 16px;font-size:12.5px;animation:rise .3s forwards;opacity:0}
-  .toast.ok{border-color:var(--acid)}
-  .toast b{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-
-  @media (max-width:840px){
-    .preview{grid-template-columns:1fr}
-    .thumb{border-right:0;border-bottom:1px solid var(--line)}
-    .job-top{grid-template-columns:1fr;gap:12px}
-    .job-thumb{display:none}
-    .bar{flex-direction:column}
-    .bar .prefix{border-right:0;border-bottom:1px solid var(--line);padding:12px 14px}
-    .bar button{border-left:0;border-top:1px solid var(--line);padding:16px}
-    .cli{flex-direction:column;align-items:stretch}
-    .term{min-width:0}
-  }
-</style>
-</head>
-<body>
-<header class="reveal d1">
-  <div class="brand">
-    <b>grab<i>.</i></b>
-    <span>downloader</span>
-  </div>
-  <div class="head-meta">
-    <span id="health"><i class="dot" id="hdot"></i> <span id="htext">connecting</span></span>
-  </div>
-</header>
-
-<main class="wrap">
-  <section class="hero">
-    <div class="kicker reveal d2">yt-dlp engine · cli + web</div>
-    <h1 class="reveal d2">Paste a link.<br /><em>Keep</em> the <span class="thin">file.</span></h1>
-    <p class="lede reveal d3">
-      Extracts the best available stream, merges audio and video with ffmpeg, and drops the
-      result straight into your <b>Downloads</b> folder. No trackers, no ads — everything runs
-      locally on your machine.
-    </p>
-
-    <div class="bar reveal d3">
-      <span class="prefix">URL</span>
-      <input id="url" type="url" spellcheck="false" autocomplete="off"
-             placeholder="https://www.youtube.com/watch?v=..." />
-      <button id="inspect" type="button">Inspect</button>
-    </div>
-    <div class="hint reveal d4">
-      <span><kbd>Enter</kbd> to inspect</span>
-      <span><kbd>ctrl</kbd>+<kbd>Enter</kbd> to download instantly</span>
-      <span>supports 1000+ sites via yt-dlp</span>
-    </div>
-
-    <div class="preview" id="preview">
-      <div class="thumb">
-        <img id="pv-thumb" alt="" referrerpolicy="no-referrer" />
-        <span class="dur" id="pv-dur"></span>
-      </div>
-      <div class="pbody">
-        <div class="ptitle" id="pv-title">—</div>
-        <div class="pmeta" id="pv-meta"></div>
-
-        <div class="controls">
-          <div class="field">
-            <label>Capture</label>
-            <div class="seg" id="seg-format">
-              <button type="button" data-v="auto" class="on">Auto</button>
-              <button type="button" data-v="video">Video</button>
-              <button type="button" data-v="audio">Audio</button>
-            </div>
-          </div>
-          <div class="field" id="f-quality">
-            <label for="quality">Max height</label>
-            <select id="quality">
-              <option value="">Best available</option>
-              <option value="2160">2160p</option>
-              <option value="1440">1440p</option>
-              <option value="1080" selected>1080p</option>
-              <option value="720">720p</option>
-              <option value="480">480p</option>
-              <option value="360">360p</option>
-            </select>
-          </div>
-          <div class="field" id="f-audio" style="display:none">
-            <label for="audiofmt">Audio format</label>
-            <select id="audiofmt">
-              <option value="m4a">m4a</option>
-              <option value="mp3">mp3</option>
-              <option value="opus">opus</option>
-              <option value="flac">flac</option>
-              <option value="wav">wav</option>
-            </select>
-          </div>
+            <footer>
+                <span>grab — local video downloader</span>
+                <span>yt-dlp · fastapi · ffmpeg</span>
+            </footer>
         </div>
 
-        <div class="checks">
-          <label id="c-playlist" style="display:none"><input type="checkbox" id="playlist" /> whole playlist</label>
-          <label><input type="checkbox" id="subs" /> include subtitles</label>
-          <span class="dest" id="dest">saving to ~/Downloads</span>
+        <div id="toasts" aria-live="polite"></div>
+
+        <script>
+            (() => {
+                "use strict";
+                const $ = (s) => document.querySelector(s);
+                const ACTIVE = [
+                    "queued",
+                    "fetching",
+                    "downloading",
+                    "processing",
+                ];
+                const state = {
+                    info: null,
+                    format: "auto",
+                    jobs: [],
+                    timer: null,
+                    snapshot: "",
+                    seen: new Set(),
+                };
+
+                /* ---------- helpers ---------- */
+                const api = async (path, opts) => {
+                    const res = await fetch(path, {
+                        headers: { "Content-Type": "application/json" },
+                        ...opts,
+                    });
+                    let body = null;
+                    try {
+                        body = await res.json();
+                    } catch (_) {}
+                    if (!res.ok)
+                        throw new Error(
+                            (body && body.detail) || res.statusText,
+                        );
+                    return body;
+                };
+
+                const bytes = (n) => {
+                    if (n == null) return "—";
+                    const u = ["B", "KB", "MB", "GB", "TB"];
+                    let i = 0,
+                        v = Number(n);
+                    while (v >= 1024 && i < u.length - 1) {
+                        v /= 1024;
+                        i++;
+                    }
+                    return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${u[i]}`;
+                };
+
+                const clock = (s) => {
+                    if (s == null) return "—";
+                    s = Math.max(0, Math.round(s));
+                    const m = Math.floor(s / 60),
+                        r = s % 60;
+                    return m ? `${m}m ${String(r).padStart(2, "0")}s` : `${r}s`;
+                };
+
+                const dur = (s) => {
+                    if (!s) return "";
+                    s = Math.round(s);
+                    const h = Math.floor(s / 3600),
+                        m = Math.floor((s % 3600) / 60),
+                        r = s % 60;
+                    return h
+                        ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`
+                        : `${m}:${String(r).padStart(2, "0")}`;
+                };
+
+                const esc = (s) =>
+                    String(s ?? "").replace(
+                        /[&<>"']/g,
+                        (c) =>
+                            ({
+                                "&": "&amp;",
+                                "<": "&lt;",
+                                ">": "&gt;",
+                                '"': "&quot;",
+                                "'": "&#39;",
+                            })[c],
+                    );
+
+                function setThumb(img, url, id) {
+                    const box = img.parentElement;
+                    img.classList.remove("ready");
+                    if (!url) {
+                        box.classList.add("no-img");
+                        img.removeAttribute("src");
+                        return;
+                    }
+                    box.classList.remove("no-img");
+                    img.onload = () => img.classList.add("ready");
+                    img.onerror = () => {
+                        if (!img.dataset.fb && id && url.includes("ytimg")) {
+                            img.dataset.fb = "1";
+                            img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+                            return;
+                        }
+                        box.classList.add("no-img");
+                        img.removeAttribute("src");
+                    };
+                    img.src = url;
+                }
+
+                function toast(title, message, ok) {
+                    const el = document.createElement("div");
+                    el.className = "toast" + (ok ? " ok" : "");
+                    el.innerHTML = `<i></i><div><b>${esc(title)}</b><small>${esc(message)}</small></div>`;
+                    el.onclick = () => el.remove();
+                    $("#toasts").append(el);
+                    setTimeout(() => {
+                        el.classList.add("out");
+                        setTimeout(() => el.remove(), 320);
+                    }, 4800);
+                }
+
+                /* ---------- health ---------- */
+                function setHealth(ok) {
+                    $("#led").classList.toggle("bad", !ok);
+                    $("#htext").textContent = ok ? "online" : "offline";
+                }
+                async function health() {
+                    try {
+                        await api("/api/health");
+                        setHealth(true);
+                    } catch (_) {
+                        setHealth(false);
+                    }
+                }
+
+                /* ---------- inspect ---------- */
+                async function inspect() {
+                    const url = $("#url").value.trim();
+                    if (!url) {
+                        toast("Missing URL", "Paste a link first.");
+                        $("#url").focus();
+                        return;
+                    }
+                    const btn = $("#inspect");
+                    btn.classList.add("loading");
+                    btn.disabled = true;
+                    try {
+                        state.info = await api("/api/info", {
+                            method: "POST",
+                            body: JSON.stringify({ url }),
+                        });
+                        renderPreview(state.info);
+                    } catch (err) {
+                        toast("Could not read that link", err.message);
+                    } finally {
+                        btn.classList.remove("loading");
+                        btn.disabled = false;
+                    }
+                }
+
+                function renderPreview(info) {
+                    $("#pv-title").textContent = info.title || "Untitled";
+                    setThumb($("#pv-img"), info.thumbnail, info.id);
+                    $("#pv-dur").textContent = info.is_playlist
+                        ? `${info.count} items`
+                        : dur(info.duration) || "live";
+
+                    const bits = [];
+                    if (info.uploader) bits.push(esc(info.uploader));
+                    if (info.extractor) bits.push(esc(info.extractor));
+                    if (info.view_count)
+                        bits.push(
+                            `${Number(info.view_count).toLocaleString()} views`,
+                        );
+                    if (info.filesize) bits.push(bytes(info.filesize));
+                    $("#pv-meta").innerHTML = bits.length
+                        ? bits.map((b) => `<span>${b}</span>`).join("")
+                        : "<span>unknown source</span>";
+
+                    $("#c-playlist").hidden = !info.is_playlist;
+                    $("#playlist").checked = !!info.is_playlist;
+
+                    const card = $("#card");
+                    card.hidden = false;
+                    card.classList.remove("show");
+                    void card.offsetWidth;
+                    card.classList.add("show");
+                    moveKnob();
+                    card.scrollIntoView({
+                        behavior: "smooth",
+                        block: "nearest",
+                    });
+                }
+
+                /* ---------- controls ---------- */
+                function moveKnob() {
+                    const on = $("#seg .on"),
+                        knob = $("#seg .knob");
+                    if (!on || !on.offsetWidth) return;
+                    knob.style.width = on.offsetWidth + "px";
+                    knob.style.transform = `translateX(${on.offsetLeft}px)`;
+                }
+
+                $("#seg").addEventListener("click", (e) => {
+                    const b = e.target.closest("button");
+                    if (!b) return;
+                    $("#seg")
+                        .querySelectorAll("button")
+                        .forEach((c) => c.classList.toggle("on", c === b));
+                    state.format = b.dataset.v;
+                    const audio = state.format === "audio";
+                    $("#f-audio").hidden = !audio;
+                    $("#f-quality").hidden = audio;
+                    moveKnob();
+                });
+                window.addEventListener("resize", moveKnob);
+
+                async function startDownload() {
+                    const url = state.info
+                        ? state.info.webpage_url || $("#url").value.trim()
+                        : $("#url").value.trim();
+                    if (!url) {
+                        toast("Missing URL", "Paste a link first.");
+                        return;
+                    }
+                    const btn = $("#download");
+                    btn.classList.add("loading");
+                    btn.disabled = true;
+                    try {
+                        const payload = {
+                            url,
+                            format: state.format,
+                            quality:
+                                state.format === "audio"
+                                    ? null
+                                    : Number($("#quality").value) || null,
+                            audio_format: $("#audiofmt").value,
+                            playlist: $("#playlist").checked,
+                            subtitles: $("#subs").checked,
+                        };
+                        const job = await api("/api/download", {
+                            method: "POST",
+                            body: JSON.stringify(payload),
+                        });
+                        state.jobs.unshift(job);
+                        state.snapshot = JSON.stringify(state.jobs);
+                        renderJobs();
+                        toast("Queued", job.url, true);
+                        poll();
+                    } catch (err) {
+                        toast("Download failed to start", err.message);
+                    } finally {
+                        btn.classList.remove("loading");
+                        btn.disabled = false;
+                    }
+                }
+
+                /* ---------- jobs ---------- */
+                function statusLabel(s) {
+                    return (
+                        {
+                            queued: "queued",
+                            fetching: "reading",
+                            downloading: "downloading",
+                            processing: "processing",
+                            finished: "done",
+                            error: "failed",
+                            cancelling: "cancelling",
+                            cancelled: "cancelled",
+                        }[s] || s
+                    );
+                }
+
+                function renderJobs() {
+                    const host = $("#jobs");
+                    const n = state.jobs.length;
+                    $("#qcount").textContent = `${n} item${n === 1 ? "" : "s"}`;
+                    if (!n) {
+                        host.innerHTML = `<div class="empty"><b>Nothing queued yet</b>Paste a link above or run <code>grab &lt;url&gt;</code> in a terminal.</div>`;
+                        return;
+                    }
+                    host.innerHTML = state.jobs.map(jobRow).join("");
+                    host.querySelectorAll("img[data-src]").forEach((img) =>
+                        setThumb(img, img.dataset.src, img.dataset.id),
+                    );
+                    state.jobs.forEach((j) => state.seen.add(j.id));
+                }
+
+                function jobRow(j) {
+                    const active = ACTIVE.includes(j.status);
+                    const files = j.files || [];
+                    const pct = j.status === "finished" ? 100 : j.progress || 0;
+                    const indet = active && !pct;
+                    const fillCls =
+                        {
+                            error: "error",
+                            cancelled: "cancelled",
+                            finished: "done",
+                        }[j.status] || "";
+                    const isNew = state.seen.has(j.id) ? "" : " enter";
+
+                    const thumb = `<div class="job-thumb ${j.thumbnail ? "" : "no-img"}"><img alt="" loading="lazy" referrerpolicy="no-referrer"
+      ${j.thumbnail ? `data-src="${esc(j.thumbnail)}" data-id="${esc(j.id)}"` : ""} /></div>`;
+
+                    const stats = [];
+                    if (j.status === "downloading") {
+                        if (j.speed) stats.push(`<b>${bytes(j.speed)}/s</b>`);
+                        if (j.eta != null)
+                            stats.push(`eta <b>${clock(j.eta)}</b>`);
+                        if (j.total)
+                            stats.push(
+                                `<b>${bytes(j.downloaded)}</b> of ${bytes(j.total)}`,
+                            );
+                        else if (j.downloaded)
+                            stats.push(`<b>${bytes(j.downloaded)}</b>`);
+                        if (pct) stats.push(`${Math.round(pct)}%`);
+                    } else if (j.status === "finished") {
+                        const count = files.length || 1;
+                        stats.push(
+                            `saved <b>${count}</b> file${count > 1 ? "s" : ""}`,
+                        );
+                        stats.push(`took <b>${clock(j.elapsed)}</b>`);
+                        if (j.options)
+                            stats.push(
+                                `${esc(j.options.format)}${j.options.quality ? ` · ${j.options.quality}p` : ""}`,
+                            );
+                    } else if (j.status === "fetching")
+                        stats.push("resolving streams…");
+                    else if (j.status === "processing")
+                        stats.push("merging / converting…");
+                    else if (j.status === "queued")
+                        stats.push("waiting for a slot");
+                    if (j.warnings && j.warnings.length)
+                        stats.push(
+                            `<span class="warn">${esc(j.warnings[0])}</span>`,
+                        );
+
+                    const actions = [];
+                    if (j.status === "finished" && files.length) {
+                        files.forEach((f, i) => {
+                            const name = f.split(/[\\/]/).pop();
+                            const label =
+                                files.length > 1
+                                    ? `save ${i + 1}`
+                                    : "save file";
+                            actions.push(
+                                `<a class="ghost" href="/api/jobs/${j.id}/file?index=${i}" download="${esc(name)}">${label}</a>`,
+                            );
+                        });
+                    } else if (active) {
+                        actions.push(
+                            `<button class="ghost danger" data-act="cancel" data-id="${j.id}">cancel</button>`,
+                        );
+                    }
+
+                    return `<article class="job${isNew}">
+      ${thumb}
+      <div class="jtext">
+        <div class="jrow">
+          <div class="jtext">
+            <div class="job-title">${esc(j.title || j.url)}</div>
+            <div class="job-url">${esc(j.url)}</div>
+          </div>
+          <span class="pill ${esc(j.status)}">${statusLabel(j.stage || j.status)}</span>
         </div>
-
-        <button class="go" id="download" type="button">Download</button>
+        <div class="stats">${stats.map((s) => `<span>${s}</span>`).join("")}</div>
+        <div class="track"><div class="fill ${fillCls} ${indet ? "ind" : ""}" style="${indet ? "" : `width:${pct}%`}"></div></div>
+        ${j.status === "error" && j.error ? `<div class="err">${esc(j.error)}</div>` : ""}
+        ${actions.length ? `<div class="acts">${actions.join("")}</div>` : ""}
       </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <h2>Transfer queue</h2>
-      <span class="count" id="qcount">0 items</span>
-    </div>
-    <div id="jobs">
-      <div class="empty" id="empty">
-        <b>Nothing in the queue</b>
-        Paste a URL above, or run <span style="color:var(--acid)">grab &lt;url&gt;</span> in a terminal.
-      </div>
-    </div>
-  </section>
-
-  <section class="cli">
-    <div>
-      <h3>The same engine, in your terminal.</h3>
-      <p>This web UI is a thin skin over the CLI. Anything you do here, you can script — pipes, aliases, cron jobs and all.</p>
-    </div>
-    <div class="term">
-      <button class="copy" id="copy" type="button">copy</button>
-      <div class="line"><span class="p">$</span> uv run grab <span class="c">-f audio --audio-format mp3</span> &lt;url&gt;</div>
-      <div class="line"><span class="p">$</span> uv run grab info <span class="c">&lt;url&gt;</span> <span class="cursor"></span></div>
-    </div>
-  </section>
-
-  <footer>
-    <span>grab — local video downloader</span>
-    <span>powered by yt-dlp · fastapi · ffmpeg</span>
-  </footer>
-</main>
-
-<div id="toasts"></div>
-
-<script>
-(() => {
-  "use strict";
-  const $ = (s) => document.querySelector(s);
-  const state = { info: null, format: "auto", jobs: [], timer: null, snapshot: "" };
-  const ACTIVE = ["queued", "fetching", "downloading", "processing"];
-
-  /* ---------------- helpers ---------------- */
-  const api = async (path, opts) => {
-    const res = await fetch(path, {
-      headers: { "Content-Type": "application/json" },
-      ...opts,
-    });
-    let body = null;
-    try { body = await res.json(); } catch (_) { /* no body */ }
-    if (!res.ok) throw new Error((body && body.detail) || res.statusText);
-    return body;
-  };
-
-  const bytes = (n) => {
-    if (n === null || n === undefined) return "—";
-    const u = ["B", "KB", "MB", "GB", "TB"];
-    let i = 0, v = Number(n);
-    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-    return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${u[i]}`;
-  };
-
-  const clock = (s) => {
-    if (s === null || s === undefined) return "—";
-    s = Math.max(0, Math.round(s));
-    const m = Math.floor(s / 60), r = s % 60;
-    return m ? `${m}m ${String(r).padStart(2, "0")}s` : `${r}s`;
-  };
-
-  const dur = (s) => {
-    if (!s) return "";
-    s = Math.round(s);
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
-    return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`
-             : `${m}:${String(r).padStart(2, "0")}`;
-  };
-
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-  /* Fill a thumbnail box, falling back to hqdefault then a placeholder. */
-  function setThumb(box, img, url, id) {
-    if (!url) { box.classList.add("empty-thumb"); img.removeAttribute("src"); return; }
-    box.classList.remove("empty-thumb");
-    img.style.display = "";
-    img.onload = () => box.classList.remove("empty-thumb");
-    img.onerror = () => {
-      if (!img.dataset.fb && id && url.includes("ytimg")) {
-        img.dataset.fb = "1";
-        img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-        return;
-      }
-      box.classList.add("empty-thumb");
-      img.style.display = "none";
-    };
-    img.src = url;
-  }
-
-  function toast(title, message, ok) {
-    const el = document.createElement("div");
-    el.className = "toast" + (ok ? " ok" : "");
-    el.innerHTML = `<b>${esc(title)}</b>${esc(message)}`;
-    $("#toasts").appendChild(el);
-    setTimeout(() => { el.style.transition = "opacity .4s, transform .4s"; el.style.opacity = "0"; el.style.transform = "translateY(8px)"; }, 5200);
-    setTimeout(() => el.remove(), 5700);
-  }
-
-  /* ---------------- health ---------------- */
-  async function health() {
-    try {
-      const h = await api("/api/health");
-      $("#hdot").classList.remove("bad");
-      $("#htext").textContent = "online";
-    } catch (_) {
-      $("#hdot").classList.add("bad");
-      $("#htext").textContent = "offline";
-    }
-  }
-
-  /* ---------------- inspect ---------------- */
-  async function inspect() {
-    const url = $("#url").value.trim();
-    if (!url) { toast("Missing URL", "Paste a link first."); $("#url").focus(); return; }
-    const btn = $("#inspect");
-    btn.disabled = true; btn.textContent = "Reading…";
-    try {
-      const info = await api("/api/info", { method: "POST", body: JSON.stringify({ url }) });
-      state.info = info;
-      renderPreview(info);
-    } catch (err) {
-      toast("Could not read that link", err.message);
-    } finally {
-      btn.disabled = false; btn.textContent = "Inspect";
-    }
-  }
-
-  function renderPreview(info) {
-    $("#pv-title").textContent = info.title || "Untitled";
-    setThumb($("#preview .thumb"), $("#pv-thumb"), info.thumbnail, info.id);
-    $("#pv-dur").textContent = info.is_playlist ? `${info.count} items` : (dur(info.duration) || "—");
-
-    const bits = [];
-    if (info.uploader) bits.push(esc(info.uploader));
-    if (info.extractor) bits.push(esc(info.extractor));
-    if (info.view_count) bits.push(`${Number(info.view_count).toLocaleString()} views`);
-    if (info.filesize) bits.push(bytes(info.filesize));
-    $("#pv-meta").innerHTML = bits.length ? bits.map((b) => `<span>${b}</span>`).join("") : "<span>unknown source</span>";
-
-    $("#c-playlist").style.display = info.is_playlist ? "" : "none";
-    if (info.is_playlist) $("#playlist").checked = true;
-    const pv = $("#preview");
-    pv.classList.remove("on");
-    void pv.offsetWidth;               // restart the entrance animation
-    pv.classList.add("on");
-    pv.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-
-  /* ---------------- controls ---------------- */
-  $("#seg-format").addEventListener("click", (e) => {
-    const b = e.target.closest("button"); if (!b) return;
-    [...e.currentTarget.children].forEach((c) => c.classList.toggle("on", c === b));
-    state.format = b.dataset.v;
-    const audio = state.format === "audio";
-    $("#f-audio").style.display = audio ? "" : "none";
-    $("#f-quality").style.display = audio ? "none" : "";
-  });
-
-  async function startDownload() {
-    const url = state.info ? (state.info.webpage_url || $("#url").value.trim()) : $("#url").value.trim();
-    if (!url) { toast("Missing URL", "Paste a link first."); return; }
-    const btn = $("#download");
-    btn.disabled = true; btn.textContent = "Queuing…";
-    try {
-      const payload = {
-        url,
-        format: state.format,
-        quality: state.format === "audio" ? null : (Number($("#quality").value) || null),
-        audio_format: $("#audiofmt").value,
-        playlist: $("#playlist").checked,
-        subtitles: $("#subs").checked,
-      };
-      const job = await api("/api/download", { method: "POST", body: JSON.stringify(payload) });
-      state.jobs.unshift(job);
-      state.snapshot = JSON.stringify(state.jobs);
-      renderJobs();
-      toast("Queued", job.url, true);
-      poll();
-    } catch (err) {
-      toast("Download failed to start", err.message);
-    } finally {
-      btn.disabled = false; btn.textContent = "Download";
-    }
-  }
-
-  /* ---------------- jobs ---------------- */
-  function statusLabel(s) {
-    return { queued: "queued", fetching: "reading", downloading: "downloading",
-             processing: "processing", finished: "done", error: "failed",
-             cancelling: "cancelling", cancelled: "cancelled" }[s] || s;
-  }
-
-  function renderJobs() {
-    const host = $("#jobs");
-    $("#qcount").textContent = `${state.jobs.length} item${state.jobs.length === 1 ? "" : "s"}`;
-    if (!state.jobs.length) {
-      host.innerHTML = `<div class="empty" id="empty"><b>Nothing in the queue</b>
-        Paste a URL above, or run <span style="color:var(--acid)">grab &lt;url&gt;</span> in a terminal.</div>`;
-      return;
-    }
-    host.innerHTML = state.jobs.map(jobRow).join("");
-    host.querySelectorAll(".job-thumb[data-src]").forEach((img) => {
-      if (img.dataset.bound) return;
-      img.dataset.bound = "1";
-      setThumb(img.parentElement, img, img.dataset.src, img.dataset.id);
-    });
-  }
-
-  function jobRow(j) {
-    const active = ACTIVE.includes(j.status);
-    const pct = j.status === "finished" ? 100 : (j.progress || 0);
-    const indet = active && !pct;
-    const cls = j.status === "error" ? "error" : (j.status === "cancelled" ? "cancelled" : "");
-    const thumb = j.thumbnail
-      ? `<div class="job-thumb"><img alt="" loading="lazy" referrerpolicy="no-referrer"
-           data-src="${esc(j.thumbnail)}" data-id="${esc(j.id)}" /></div>` : "";
-    const stats = [];
-    if (j.status === "downloading") {
-      if (j.speed) stats.push(`<b>${bytes(j.speed)}/s</b>`);
-      if (j.eta !== null && j.eta !== undefined) stats.push(`eta <b>${clock(j.eta)}</b>`);
-      if (j.total) stats.push(`<b>${bytes(j.downloaded)}</b> of ${bytes(j.total)}`);
-      else if (j.downloaded) stats.push(`<b>${bytes(j.downloaded)}</b>`);
-      if (pct) stats.push(`${Math.round(pct)}%`);
-    } else if (j.status === "finished") {
-      stats.push(`saved <b>${j.files.length || 1}</b> file${(j.files.length || 1) > 1 ? "s" : ""}`);
-      stats.push(`took <b>${clock(j.elapsed)}</b>`);
-      if (j.options) stats.push(`${esc(j.options.format)}${j.options.quality ? ` · ${j.options.quality}p` : ""}`);
-    } else if (j.status === "fetching") {
-      stats.push("resolving streams…");
-    } else if (j.status === "processing") {
-      stats.push("merging / converting…");
-    } else if (j.status === "queued") {
-      stats.push("waiting for a slot");
-    }
-    if (j.warnings && j.warnings.length) stats.push(`<span style="color:var(--acid-dim)">${esc(j.warnings[0])}</span>`);
-
-    const actions = [];
-    if (j.status === "finished" && j.files.length) {
-      j.files.forEach((f, i) => {
-        const name = f.split(/[\\/]/).pop();
-        const label = j.files.length > 1 ? `save ${i + 1}` : "save file";
-        actions.push(`<a class="btn-ghost" href="/api/jobs/${j.id}/file?index=${i}" download="${esc(name)}">${label}</a>`);
-      });
-    } else if (active) {
-      actions.push(`<button class="btn-ghost danger" data-act="cancel" data-id="${j.id}">cancel</button>`);
-    }
-
-    const errorLine = j.status === "error" && j.error
-      ? `<div class="job-error">${esc(j.error)}</div>` : "";
-
-    return `<article class="job">
-      <div class="job-top">
-        ${thumb}
-        <div class="job-info">
-          <div class="job-title">${esc(j.title || j.url)}</div>
-          <div class="job-url">${esc(j.url)}</div>
-          <div class="job-stats">${stats.join("<span>·</span>")}</div>
-        </div>
-        <span class="pill ${esc(j.status)}">${statusLabel(j.stage || j.status)}</span>
-      </div>
-      <div class="track"><div class="fill ${cls} ${indet ? "indeterminate" : ""}" style="width:${indet ? "" : pct + "%"}"></div></div>
-      ${errorLine}
-      ${actions.length ? `<div class="job-actions">${actions.join("")}</div>` : ""}
     </article>`;
-  }
+                }
 
-  document.addEventListener("click", async (e) => {
-    const b = e.target.closest('[data-act="cancel"]');
-    if (!b) return;
-    b.disabled = true;
-    try { await api(`/api/jobs/${b.dataset.id}/cancel`, { method: "POST" }); poll(); }
-    catch (err) { toast("Cancel failed", err.message); }
-  });
+                document.addEventListener("click", async (e) => {
+                    const b = e.target.closest('[data-act="cancel"]');
+                    if (!b) return;
+                    b.disabled = true;
+                    try {
+                        await api(`/api/jobs/${b.dataset.id}/cancel`, {
+                            method: "POST",
+                        });
+                        poll();
+                    } catch (err) {
+                        b.disabled = false;
+                        toast("Cancel failed", err.message);
+                    }
+                });
 
-  async function poll() {
-    if (state.timer) return;
-    const tick = async () => {
-      try {
-        const next = await api("/api/jobs");
-        const snapshot = JSON.stringify(next);
-        if (snapshot !== state.snapshot) {
-          state.snapshot = snapshot;
-          state.jobs = next;
-          renderJobs();
-        }
-        if (!next.some((j) => ACTIVE.includes(j.status))) { state.timer = null; return; }
-      } catch (_) {
-        if (!state.jobs.length) { state.timer = null; return; }
-      }
-      state.timer = setTimeout(tick, 800);
-    };
-    state.timer = setTimeout(tick, 0);
-  }
+                async function poll() {
+                    if (state.timer) return;
+                    const tick = async () => {
+                        try {
+                            const next = await api("/api/jobs");
+                            const snapshot = JSON.stringify(next);
+                            if (snapshot !== state.snapshot) {
+                                state.snapshot = snapshot;
+                                state.jobs = next;
+                                renderJobs();
+                            }
+                            if (!next.some((j) => ACTIVE.includes(j.status))) {
+                                state.timer = null;
+                                return;
+                            }
+                        } catch (_) {
+                            if (!state.jobs.length) {
+                                state.timer = null;
+                                return;
+                            }
+                        }
+                        state.timer = setTimeout(tick, 800);
+                    };
+                    state.timer = setTimeout(tick, 0);
+                }
 
-  /* ---------------- wiring ---------------- */
-  $("#inspect").addEventListener("click", inspect);
-  $("#download").addEventListener("click", startDownload);
-  $("#url").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) startDownload();
-    else if (e.key === "Enter") { e.preventDefault(); inspect(); }
-  });
-  $("#copy").addEventListener("click", async () => {
-    const cmd = "uv run grab -f audio --audio-format mp3 <url>";
-    try { await navigator.clipboard.writeText(cmd); $("#copy").textContent = "copied"; }
-    catch (_) { $("#copy").textContent = "ctrl+c"; }
-    setTimeout(() => ($("#copy").textContent = "copy"), 1600);
-  });
+                /* ---------- wiring ---------- */
+                $("#inspect").addEventListener("click", inspect);
+                $("#download").addEventListener("click", startDownload);
+                $("#url").addEventListener("keydown", (e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    e.ctrlKey || e.metaKey ? startDownload() : inspect();
+                });
+                $("#copy").addEventListener("click", async () => {
+                    const btn = $("#copy");
+                    try {
+                        await navigator.clipboard.writeText(
+                            "uv run grab -f audio --audio-format mp3 <url>",
+                        );
+                        btn.textContent = "copied";
+                    } catch (_) {
+                        btn.textContent = "ctrl+c";
+                    }
+                    setTimeout(() => (btn.textContent = "copy"), 1600);
+                });
 
-  health();
-  setInterval(health, 30000);
-  api("/api/jobs").then((j) => { state.jobs = j; state.snapshot = JSON.stringify(j); renderJobs(); if (j.some((x) => x.active)) poll(); })
-      .catch(() => renderJobs());
-})();
-</script>
-</body>
+                health();
+                setInterval(health, 30000);
+                api("/api/jobs")
+                    .then((j) => {
+                        state.jobs = j;
+                        state.snapshot = JSON.stringify(j);
+                        renderJobs();
+                        if (j.some((x) => ACTIVE.includes(x.status))) poll();
+                    })
+                    .catch(() => renderJobs());
+            })();
+        </script>
+    </body>
 </html>
