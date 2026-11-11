@@ -1,4 +1,4 @@
-# grab
+# grab - video downloader
 
 A video downloader that runs entirely on your machine — with a **CLI** and an optional **web UI**
 (`--web`), both driven by the same engine.
